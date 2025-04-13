@@ -6,24 +6,42 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { AuthError } from "@supabase/supabase-js";
 
 const SignInForm: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setErrorMessage(null);
 
     try {
       await login(email, password);
       toast.success("Successfully signed in!");
       navigate("/dashboard");
     } catch (error) {
-      toast.error("Failed to sign in. Please check your credentials.");
+      console.error("Login error:", error);
+      
+      const authError = error as AuthError;
+      if (authError?.message) {
+        if (authError.message.includes("Invalid login credentials")) {
+          setErrorMessage("Invalid email or password. Please try again.");
+        } else if (authError.message.includes("Email not confirmed")) {
+          setErrorMessage("Please verify your email before signing in.");
+        } else {
+          setErrorMessage(authError.message);
+        }
+      } else {
+        setErrorMessage("Failed to sign in. Please check your credentials.");
+      }
+      
+      toast.error(errorMessage || "Authentication failed");
     } finally {
       setIsSubmitting(false);
     }
@@ -39,6 +57,11 @@ const SignInForm: React.FC = () => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {errorMessage && (
+            <div className="p-3 text-sm bg-red-100 border border-red-200 text-red-600 rounded-md">
+              {errorMessage}
+            </div>
+          )}
           <div className="space-y-2">
             <label htmlFor="email" className="text-sm font-medium">
               Email
@@ -66,6 +89,11 @@ const SignInForm: React.FC = () => {
               required
               className="bg-background/50"
             />
+            <div className="text-sm text-right">
+              <Link to="/forgot-password" className="text-purple-400 hover:underline">
+                Forgot password?
+              </Link>
+            </div>
           </div>
           <Button
             type="submit"
