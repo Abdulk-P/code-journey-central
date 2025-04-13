@@ -29,19 +29,17 @@ const SignInForm: React.FC = () => {
       console.error("Login error:", error);
       
       const authError = error as AuthError;
-      if (authError?.message) {
-        if (authError.message.includes("Invalid login credentials")) {
-          setErrorMessage("Invalid email or password. Please try again.");
-        } else if (authError.message.includes("Email not confirmed")) {
-          setErrorMessage("Please verify your email before signing in.");
-        } else {
-          setErrorMessage(authError.message);
-        }
+      const errorMsg = authError?.message || "Failed to sign in. Please check your credentials.";
+      
+      if (errorMsg.includes("Invalid login credentials")) {
+        setErrorMessage("Invalid email or password. Please try again.");
+      } else if (errorMsg.includes("Email not confirmed")) {
+        setErrorMessage("Please verify your email before signing in.");
       } else {
-        setErrorMessage("Failed to sign in. Please check your credentials.");
+        setErrorMessage(errorMsg);
       }
       
-      toast.error(errorMessage || "Authentication failed");
+      toast.error("Authentication failed");
     } finally {
       setIsSubmitting(false);
     }
