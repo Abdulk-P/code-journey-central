@@ -1,11 +1,12 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Trash2, Check } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Platform {
   id: string;
@@ -54,48 +55,83 @@ const availablePlatforms: Platform[] = [
 ];
 
 const Platforms: React.FC = () => {
-  const { user, updateUserInfo } = useAuth();
+  const { user, fetchUserData } = useAuth();
   const [platformUsername, setPlatformUsername] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState<Record<string, boolean>>({});
 
-  const handleAddPlatform = (platformId: string) => {
+  const handleAddPlatform = async (platformId: string) => {
     if (!platformUsername[platformId] || platformUsername[platformId].trim() === "") {
       toast.error("Please enter a valid username");
       return;
     }
 
     const platform = availablePlatforms.find(p => p.id === platformId);
-    if (!platform) return;
+    if (!platform || !user) return;
 
-    // Check if platform already exists
-    const existingPlatforms = user?.platforms || [];
-    if (existingPlatforms.some(p => p.name === platform.name)) {
-      toast.error(`${platform.name} is already connected`);
-      return;
+    // Set loading state for this platform
+    setIsLoading(prev => ({ ...prev, [platformId]: true }));
+
+    try {
+      // Check if platform already exists
+      const existingPlatforms = user.platforms || [];
+      if (existingPlatforms.some(p => p.name === platform.name)) {
+        toast.error(`${platform.name} is already connected`);
+        return;
+      }
+
+      // Add platform to database
+      const { error } = await supabase
+        .from('platforms')
+        .insert({
+          user_id: user.id,
+          name: platform.name,
+          username: platformUsername[platformId],
+          verified: true, // Mock verification (would be async in real app)
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      // Refresh user data
+      await fetchUserData();
+      toast.success(`${platform.name} connected successfully!`);
+      setPlatformUsername(prev => ({ ...prev, [platformId]: "" }));
+    } catch (error: any) {
+      console.error("Error adding platform:", error);
+      toast.error(`Failed to connect ${platform.name}: ${error.message || "Unknown error"}`);
+    } finally {
+      setIsLoading(prev => ({ ...prev, [platformId]: false }));
     }
-
-    const updatedPlatforms = [
-      ...existingPlatforms,
-      {
-        name: platform.name,
-        username: platformUsername[platformId],
-        verified: true, // Mock verification (would be async in real app)
-      },
-    ];
-
-    updateUserInfo({ platforms: updatedPlatforms });
-    toast.success(`${platform.name} connected successfully!`);
-    setPlatformUsername(prev => ({ ...prev, [platformId]: "" }));
   };
 
-  const handleRemovePlatform = (platformName: string) => {
+  const handleRemovePlatform = async (platformId: string) => {
     if (!user?.platforms) return;
     
-    const updatedPlatforms = user.platforms.filter(
-      platform => platform.name !== platformName
-    );
+    const platformToRemove = user.platforms.find(p => p.id === platformId);
+    if (!platformToRemove) return;
+
+    setIsLoading(prev => ({ ...prev, [platformId]: true }));
     
-    updateUserInfo({ platforms: updatedPlatforms });
-    toast.success(`${platformName} removed successfully`);
+    try {
+      const { error } = await supabase
+        .from('platforms')
+        .delete()
+        .eq('id', platformId);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Refresh user data
+      await fetchUserData();
+      toast.success(`${platformToRemove.name} removed successfully`);
+    } catch (error: any) {
+      console.error("Error removing platform:", error);
+      toast.error(`Failed to remove platform: ${error.message || "Unknown error"}`);
+    } finally {
+      setIsLoading(prev => ({ ...prev, [platformId]: false }));
+    }
   };
 
   return (
@@ -116,7 +152,7 @@ const Platforms: React.FC = () => {
             <ul className="space-y-4">
               {user.platforms.map((platform) => (
                 <li
-                  key={platform.name}
+                  key={platform.id}
                   className="flex items-center justify-between p-4 rounded-md bg-secondary/30"
                 >
                   <div className="flex items-center">
@@ -134,10 +170,15 @@ const Platforms: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleRemovePlatform(platform.name)}
+                      onClick={() => handleRemovePlatform(platform.id)}
+                      disabled={isLoading[platform.id]}
                       className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
                     >
-                      <Trash2 size={16} />
+                      {isLoading[platform.id] ? (
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+                      ) : (
+                        <Trash2 size={16} />
+                      )}
                     </Button>
                   </div>
                 </li>
@@ -184,9 +225,14 @@ const Platforms: React.FC = () => {
                   />
                   <Button
                     onClick={() => handleAddPlatform(platform.id)}
+                    disabled={isLoading[platform.id]}
                     className="bg-purple-600 hover:bg-purple-700"
                   >
-                    Add
+                    {isLoading[platform.id] ? (
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+                    ) : (
+                      "Add"
+                    )}
                   </Button>
                 </div>
               </div>

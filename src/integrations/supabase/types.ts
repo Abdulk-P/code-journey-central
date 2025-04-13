@@ -9,7 +9,114 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      platforms: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          user_id: string
+          username: string
+          verified: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          user_id: string
+          username: string
+          verified?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          user_id?: string
+          username?: string
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          branch: string | null
+          college: string | null
+          country: string | null
+          created_at: string | null
+          degree: string | null
+          email: string | null
+          first_name: string | null
+          graduation_year: number | null
+          id: string
+          last_name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          branch?: string | null
+          college?: string | null
+          country?: string | null
+          created_at?: string | null
+          degree?: string | null
+          email?: string | null
+          first_name?: string | null
+          graduation_year?: number | null
+          id: string
+          last_name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          branch?: string | null
+          college?: string | null
+          country?: string | null
+          created_at?: string | null
+          degree?: string | null
+          email?: string | null
+          first_name?: string | null
+          graduation_year?: number | null
+          id?: string
+          last_name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      socials: {
+        Row: {
+          created_at: string | null
+          id: string
+          linkedin: string | null
+          resume: string | null
+          twitter: string | null
+          updated_at: string | null
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          linkedin?: string | null
+          resume?: string | null
+          twitter?: string | null
+          updated_at?: string | null
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          linkedin?: string | null
+          resume?: string | null
+          twitter?: string | null
+          updated_at?: string | null
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

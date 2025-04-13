@@ -30,7 +30,8 @@ const SignUpForm: React.FC = () => {
       await signup(email, password, firstName, lastName);
       toast.success("Account created successfully!");
     } catch (error) {
-      toast.error("Failed to create account. Please try again.");
+      console.error("Signup error:", error);
+      // Error is already handled in the signup function
     } finally {
       setIsSubmitting(false);
     }

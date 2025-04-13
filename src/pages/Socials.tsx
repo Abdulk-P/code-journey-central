@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,13 +9,26 @@ import { Linkedin, Twitter, Globe, FileText } from "lucide-react";
 
 const Socials: React.FC = () => {
   const { user, updateUserInfo } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [socials, setSocials] = useState({
-    linkedin: user?.socials?.linkedin || "",
-    twitter: user?.socials?.twitter || "",
-    website: user?.socials?.website || "",
-    resume: user?.socials?.resume || "",
+    linkedin: '',
+    twitter: '',
+    website: '',
+    resume: '',
   });
+
+  // Update form when user data changes
+  useEffect(() => {
+    if (user && user.socials) {
+      setSocials({
+        linkedin: user.socials.linkedin || '',
+        twitter: user.socials.twitter || '',
+        website: user.socials.website || '',
+        resume: user.socials.resume || '',
+      });
+    }
+  }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -25,10 +38,19 @@ const Socials: React.FC = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateUserInfo({ socials });
-    toast.success("Social profiles updated successfully");
+    setIsSubmitting(true);
+    
+    try {
+      await updateUserInfo({ socials });
+      toast.success("Social profiles updated successfully");
+    } catch (error) {
+      console.error("Error updating socials:", error);
+      toast.error("Failed to update social profiles");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -116,8 +138,19 @@ const Socials: React.FC = () => {
               </div>
             </div>
             
-            <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
-              Save Changes
+            <Button 
+              type="submit" 
+              className="bg-purple-600 hover:bg-purple-700"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <span className="flex items-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+                  Saving...
+                </span>
+              ) : (
+                "Save Changes"
+              )}
             </Button>
           </form>
         </CardContent>

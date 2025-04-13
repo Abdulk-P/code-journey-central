@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,31 +10,58 @@ import { countries } from "@/data/countries";
 
 const Profile: React.FC = () => {
   const { user, updateUserInfo } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
-    firstName: user?.firstName || "",
-    lastName: user?.lastName || "",
-    email: user?.email || "",
-    bio: user?.bio || "",
-    country: user?.country || "",
-    college: user?.college || "",
-    degree: user?.degree || "",
-    branch: user?.branch || "",
-    graduationYear: user?.graduationYear || undefined,
+    firstName: '',
+    lastName: '',
+    email: '',
+    bio: '',
+    country: '',
+    college: '',
+    degree: '',
+    branch: '',
+    graduationYear: undefined as number | undefined,
   });
+
+  // Update form when user data changes
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        bio: user.bio || '',
+        country: user.country || '',
+        college: user.college || '',
+        degree: user.degree || '',
+        branch: user.branch || '',
+        graduationYear: user.graduationYear
+      });
+    }
+  }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === "graduationYear" ? parseInt(value) || undefined : value,
+      [name]: name === "graduationYear" ? (value ? parseInt(value) : undefined) : value,
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateUserInfo(formData);
-    toast.success("Profile updated successfully");
+    setIsSubmitting(true);
+    
+    try {
+      await updateUserInfo(formData);
+      toast.success("Profile updated successfully");
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -91,6 +118,7 @@ const Profile: React.FC = () => {
                 value={formData.email}
                 onChange={handleChange}
                 className="bg-background/50"
+                disabled
               />
             </div>
             
@@ -188,8 +216,19 @@ const Profile: React.FC = () => {
               </div>
             </div>
             
-            <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
-              Save Changes
+            <Button 
+              type="submit" 
+              className="bg-purple-600 hover:bg-purple-700"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <span className="flex items-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+                  Saving...
+                </span>
+              ) : (
+                "Save Changes"
+              )}
             </Button>
           </form>
         </CardContent>
