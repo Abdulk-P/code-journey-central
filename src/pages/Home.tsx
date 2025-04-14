@@ -1,9 +1,8 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
-import { Code, Laptop, Users, Mail, GitHub, Twitter, Linkedin } from "lucide-react";
+import { Code, Laptop, Users, Mail, Github, Twitter, Linkedin } from "lucide-react";
 
 const Home: React.FC = () => {
   return (
@@ -201,7 +200,7 @@ const Home: React.FC = () => {
 
               <div className="glass-card p-6 flex flex-col items-center text-center">
                 <div className="w-12 h-12 rounded-full bg-purple-600/20 flex items-center justify-center mb-4">
-                  <GitHub className="h-6 w-6 text-purple-400" />
+                  <Github className="h-6 w-6 text-purple-400" />
                 </div>
                 <h3 className="text-lg font-semibold mb-2">GitHub</h3>
                 <p className="text-muted-foreground">Follow our open source projects</p>
@@ -250,7 +249,7 @@ const Home: React.FC = () => {
                   <Twitter className="h-5 w-5" />
                 </a>
                 <a href="#" className="text-muted-foreground hover:text-purple-400">
-                  <GitHub className="h-5 w-5" />
+                  <Github className="h-5 w-5" />
                 </a>
                 <a href="#" className="text-muted-foreground hover:text-purple-400">
                   <Linkedin className="h-5 w-5" />
