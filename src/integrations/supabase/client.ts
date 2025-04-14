@@ -41,3 +41,35 @@ export const setupAdminUser = async (userId: string, collegeId: string, title?: 
     return { success: false, error };
   }
 };
+
+// Function to invite a user to join as a college admin
+export const inviteCollegeAdmin = async (email: string, collegeId: string, title: string) => {
+  try {
+    // This would typically involve sending an email invitation
+    // For now, we'll just create the admin record if the user exists
+    
+    // First, check if the user exists by email
+    const { data: profiles, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', email)
+      .limit(1);
+    
+    if (profileError) throw profileError;
+    
+    if (profiles && profiles.length > 0) {
+      const userId = profiles[0].id;
+      
+      // Set up the admin user
+      return await setupAdminUser(userId, collegeId, title);
+    } else {
+      return { 
+        success: false, 
+        error: { message: 'User with this email does not exist' } 
+      };
+    }
+  } catch (error) {
+    console.error('Error inviting college admin:', error);
+    return { success: false, error };
+  }
+};
