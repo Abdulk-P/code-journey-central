@@ -1,10 +1,10 @@
-
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import MotivationalQuote from "@/components/MotivationalQuote";
+import TopicSuggestion from "@/components/TopicSuggestion";
 import { Loader2 } from "lucide-react";
 
 interface LeetCodeStats {
@@ -31,7 +31,6 @@ const Dashboard: React.FC = () => {
   const [gfgStats, setGfgStats] = useState<GFGStats | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Generate some sample data
   const getTopicAnalysis = () => {
     let topicData = [
       { topic: "Arrays", count: 0 },
@@ -41,12 +40,10 @@ const Dashboard: React.FC = () => {
       { topic: "Graphs", count: 0 }
     ];
 
-    // If we have LeetCode data, distribute the solved problems across topics
     if (leetcodeStats) {
       const total = leetcodeStats.totalSolved;
       if (total > 0) {
-        // Distribute total solved across random topics
-        const distribution = [0.3, 0.2, 0.2, 0.15, 0.15]; // 30%, 20%, 20%, 15%, 15%
+        const distribution = [0.3, 0.2, 0.2, 0.15, 0.15];
         topicData = topicData.map((item, index) => ({
           ...item,
           count: Math.round(total * distribution[index])
@@ -54,9 +51,8 @@ const Dashboard: React.FC = () => {
       }
     }
 
-    // If we have GFG data, add more to the topic counts
     if (gfgStats && gfgStats.totalSolved > 0) {
-      const distribution = [0.25, 0.25, 0.2, 0.15, 0.15]; // Different distribution
+      const distribution = [0.25, 0.25, 0.2, 0.15, 0.15];
       topicData = topicData.map((item, index) => ({
         ...item,
         count: item.count + Math.round(gfgStats.totalSolved * distribution[index])
@@ -67,25 +63,22 @@ const Dashboard: React.FC = () => {
   };
 
   const getProblemsSolvedByDay = () => {
-    // Generate last 7 days
     const last7Days = Array.from({ length: 7 }, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() - i);
       return date.toISOString().split('T')[0];
     }).reverse();
 
-    // Generate random counts for each day if we have platform data
     if (leetcodeStats || gfgStats) {
       return last7Days.map(date => {
-        const randomCount = Math.floor(Math.random() * 5); // 0-4 problems per day
+        const randomCount = Math.floor(Math.random() * 5);
         return { date, count: randomCount };
       });
     }
     
-    // Default empty data
     return last7Days.map(date => ({ date, count: 0 }));
   };
-  
+
   useEffect(() => {
     const fetchPlatformData = async () => {
       if (!user?.platforms || user.platforms.length === 0) {
@@ -96,11 +89,9 @@ const Dashboard: React.FC = () => {
       setIsLoading(true);
       
       try {
-        // Find LeetCode and GFG platforms
         const leetcodePlatform = user.platforms.find(p => p.name.toLowerCase() === "leetcode");
         const gfgPlatform = user.platforms.find(p => p.name.toLowerCase() === "geeksforgeeks");
         
-        // Fetch LeetCode data if available
         if (leetcodePlatform) {
           const { data: leetcodeData, error: leetcodeError } = await supabase.functions.invoke('leetcode-data', {
             body: { username: leetcodePlatform.username }
@@ -128,7 +119,6 @@ const Dashboard: React.FC = () => {
           }
         }
         
-        // Fetch GFG data if available
         if (gfgPlatform) {
           const { data: gfgData, error: gfgError } = await supabase.functions.invoke('gfg-data', {
             body: { username: gfgPlatform.username }
@@ -165,14 +155,27 @@ const Dashboard: React.FC = () => {
     fetchPlatformData();
   }, [user?.platforms]);
   
-  // Calculate stats
   const totalQuestions = (leetcodeStats?.totalSolved || 0) + (gfgStats?.totalSolved || 0);
-  const activeDays = user?.stats?.activeDays || 7; // Sample value
+  const activeDays = user?.stats?.activeDays || 7;
   const topicAnalysis = getTopicAnalysis();
   const problemsSolvedByDay = getProblemsSolvedByDay();
 
-  // Colors for the pie chart
   const COLORS = ['#8b5cf6', '#a78bfa', '#c4b5fd', '#7c3aed', '#6d28d9'];
+
+  const platformStats = {
+    leetcode: leetcodeStats ? {
+      totalSolved: leetcodeStats.totalSolved,
+      easySolved: leetcodeStats.easySolved,
+      mediumSolved: leetcodeStats.mediumSolved,
+      hardSolved: leetcodeStats.hardSolved
+    } : undefined,
+    gfg: gfgStats ? {
+      totalSolved: gfgStats.totalSolved,
+      easySolved: gfgStats.easySolved,
+      mediumSolved: gfgStats.mediumSolved,
+      basicSolved: gfgStats.basicSolved
+    } : undefined
+  };
 
   if (isLoading) {
     return (
@@ -282,6 +285,8 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <TopicSuggestion platformStats={platformStats} />
+
         <Card className="glass-card">
           <CardHeader>
             <CardTitle>Platforms</CardTitle>
@@ -315,7 +320,9 @@ const Dashboard: React.FC = () => {
             )}
           </CardContent>
         </Card>
+      </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="glass-card">
           <CardHeader>
             <CardTitle>Upcoming Features</CardTitle>

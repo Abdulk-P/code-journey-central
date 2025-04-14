@@ -3,7 +3,7 @@ import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, Menu } from "lucide-react";
+import { LogOut, Menu, Code } from "lucide-react";
 import { toast } from "sonner";
 
 interface NavbarProps {
@@ -38,9 +38,15 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
             <Menu className="h-5 w-5" />
           </Button>
         )}
-        <Link to="/" className="text-xl font-bold text-purple-400">
-          ProgressBuddy
+        <Link to="/" className="text-xl font-bold text-purple-400 flex items-center">
+          <Code className="h-5 w-5 mr-1" /> ProgressBuddy
         </Link>
+      </div>
+
+      <div className="hidden md:flex items-center space-x-6">
+        <Link to="/#features" className="text-sm hover:text-purple-400 transition-colors">Features</Link>
+        <Link to="/#about" className="text-sm hover:text-purple-400 transition-colors">About</Link>
+        <Link to="/#contact" className="text-sm hover:text-purple-400 transition-colors">Contact Us</Link>
       </div>
 
       <div className="flex items-center gap-4">
