@@ -1,73 +1,125 @@
-# Welcome to your Lovable project
 
-## Project info
+# ProgressBuddy - Coding Progress Tracker
 
-**URL**: https://lovable.dev/projects/27aefaca-a5eb-4167-83e0-f2b1ab5d43cd
+## Project Overview
 
-## How can I edit this code?
+ProgressBuddy is a comprehensive web application designed to help developers track and visualize their coding journey across multiple platforms. The application serves as a centralized dashboard that aggregates progress data from various coding platforms like LeetCode and GeeksforGeeks, providing users with insightful analytics and personalized recommendations to improve their skills.
 
-There are several ways of editing your application.
+## Key Features
 
-**Use Lovable**
+### 1. Unified Dashboard
+- **Cross-Platform Tracking**: Connects to multiple coding platforms (LeetCode, GeeksforGeeks) to track progress in one place
+- **Visual Analytics**: Displays comprehensive charts and statistics about coding activities
+- **Progress Monitoring**: Tracks active days, streaks, and overall growth
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/27aefaca-a5eb-4167-83e0-f2b1ab5d43cd) and start prompting.
+### 2. AI-Powered Recommendations
+- **Topic Suggestions**: Uses OpenAI to generate personalized topic recommendations based on current progress
+- **Learning Path Guidance**: Suggests next steps for skill improvement based on performance analytics
+- **Customized Problem Recommendations**: Recommends specific problems to practice based on skill gaps
 
-Changes made via Lovable will be committed automatically to this repo.
+### 3. User Profile Management
+- **Platform Connections**: Allows users to connect and manage their coding platform accounts
+- **Customizable Profiles**: Lets users create and customize their developer profiles
+- **Social Sharing**: Enables sharing of progress and achievements to social media platforms
 
-**Use your preferred IDE**
+## Technical Architecture
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Frontend
+- **Framework**: React with TypeScript for type safety
+- **UI Components**: Built with shadcn/ui component library
+- **Styling**: Tailwind CSS for responsive design
+- **State Management**: React Context API and React Query for data fetching
+- **Routing**: React Router for navigation
+- **Charts**: Recharts for data visualization
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Backend
+- **Platform**: Supabase for backend services
+- **Authentication**: Supabase Auth for user authentication
+- **Database**: PostgreSQL (via Supabase)
+- **Edge Functions**: Serverless functions for API integration and AI processing
+- **AI Integration**: OpenAI API for generating personalized recommendations
 
-Follow these steps:
+### API Integrations
+- **LeetCode API**: Fetches user statistics and problem-solving data
+- **GeeksforGeeks API**: Retrieves user progress and problem-solving patterns
+- **OpenAI API**: Generates personalized topic suggestions
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Getting Started
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Prerequisites
+- Node.js and npm installed
+- Supabase account
+- OpenAI API key
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Installation
+1. Clone the repository
+2. Run `npm install` to install dependencies
+3. Set up environment variables for Supabase and OpenAI
+4. Run `npm run dev` to start the development server
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+### Environment Variables
+- `SUPABASE_URL`: Your Supabase project URL
+- `SUPABASE_ANON_KEY`: Your Supabase anonymous key
+- `OPENAI_API_KEY`: Your OpenAI API key
+
+## User Flow
+
+1. **Sign Up/Sign In**: Users create an account or sign in to existing account
+2. **Connect Platforms**: Users connect their LeetCode and GeeksforGeeks accounts
+3. **Dashboard View**: Users see unified statistics and visualizations of their coding progress
+4. **Generate Recommendations**: Users get AI-powered topic suggestions based on their performance
+5. **Manage Profile**: Users can update their profile information and platform connections
+6. **Track Progress**: Users monitor their improvement over time with detailed analytics
+
+## Future Enhancements
+
+- Integration with additional coding platforms (HackerRank, CodeChef, etc.)
+- Collaborative features for team learning
+- Interview preparation tracking
+- Code review integration
+- Custom learning paths
+- Mobile application support
+
+## Project Structure
+
+```
+progressbuddy/
+├── public/
+├── src/
+│   ├── components/
+│   │   ├── ui/             # UI components from shadcn/ui
+│   │   ├── DashboardLayout # Layout component for dashboard
+│   │   ├── Navbar          # Navigation bar component
+│   │   ├── Sidebar         # Side navigation component
+│   │   ├── TopicSuggestion # AI-powered topic suggestion component
+│   │   └── ...
+│   ├── contexts/
+│   │   └── AuthContext     # Authentication context
+│   ├── integrations/
+│   │   └── supabase/       # Supabase client and types
+│   ├── pages/
+│   │   ├── Dashboard       # Main dashboard page
+│   │   ├── Home            # Landing page
+│   │   ├── Platforms       # Platform management page
+│   │   ├── Profile         # User profile page
+│   │   └── ...
+│   └── App.tsx             # Main application component
+├── supabase/
+│   └── functions/          # Supabase Edge Functions
+└── package.json
 ```
 
-**Edit a file directly in GitHub**
+## Security Considerations
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- User authentication is handled securely through Supabase Auth
+- API keys are stored as environment variables and never exposed to clients
+- Edge Functions implement proper authorization checks
+- Database access is controlled through Row Level Security policies
 
-**Use GitHub Codespaces**
+## Contributing
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+We welcome contributions to ProgressBuddy! Please feel free to submit issues and pull requests.
 
-## What technologies are used for this project?
+## License
 
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/27aefaca-a5eb-4167-83e0-f2b1ab5d43cd) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+This project is licensed under the MIT License.

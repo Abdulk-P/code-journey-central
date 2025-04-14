@@ -22,6 +22,8 @@ serve(async (req) => {
       throw new Error('Missing OpenAI API key. Please set the OPENAI_API_KEY in the Edge Function secrets.');
     }
 
+    console.log('Making request to OpenAI API with prompt:', prompt);
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -39,13 +41,21 @@ serve(async (req) => {
       }),
     });
 
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('OpenAI API error response:', errorData);
+      throw new Error(`OpenAI API responded with status ${response.status}: ${errorData.error?.message || 'Unknown error'}`);
+    }
+
     const data = await response.json();
     
     if (data.error) {
+      console.error('OpenAI API returned an error:', data.error);
       throw new Error(`OpenAI API error: ${data.error.message}`);
     }
 
     const suggestion = data.choices[0].message.content;
+    console.log('Successfully generated suggestion');
 
     return new Response(JSON.stringify({ suggestion }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

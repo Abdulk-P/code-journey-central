@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { LogOut, Menu, Code } from "lucide-react";
@@ -13,6 +13,7 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   const { isAuthenticated, logout, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = async () => {
     try {
@@ -22,6 +23,21 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
     } catch (error) {
       console.error("Logout error:", error);
       toast.error("Failed to log out. Please try again.");
+    }
+  };
+
+  const handleLogoClick = () => {
+    navigate("/");
+  };
+
+  const scrollToSection = (sectionId: string) => {
+    if (location.pathname !== "/") {
+      navigate(`/#${sectionId}`);
+    } else {
+      const section = document.getElementById(sectionId);
+      if (section) {
+        section.scrollIntoView({ behavior: "smooth" });
+      }
     }
   };
 
@@ -38,15 +54,33 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
             <Menu className="h-5 w-5" />
           </Button>
         )}
-        <Link to="/" className="text-xl font-bold text-purple-400 flex items-center">
+        <div 
+          onClick={handleLogoClick} 
+          className="text-xl font-bold text-purple-400 flex items-center cursor-pointer"
+        >
           <Code className="h-5 w-5 mr-1" /> ProgressBuddy
-        </Link>
+        </div>
       </div>
 
       <div className="hidden md:flex items-center space-x-6">
-        <Link to="/#features" className="text-sm hover:text-purple-400 transition-colors">Features</Link>
-        <Link to="/#about" className="text-sm hover:text-purple-400 transition-colors">About</Link>
-        <Link to="/#contact" className="text-sm hover:text-purple-400 transition-colors">Contact Us</Link>
+        <button 
+          onClick={() => scrollToSection('features')} 
+          className="text-sm hover:text-purple-400 transition-colors"
+        >
+          Features
+        </button>
+        <button 
+          onClick={() => scrollToSection('about')} 
+          className="text-sm hover:text-purple-400 transition-colors"
+        >
+          About
+        </button>
+        <button 
+          onClick={() => scrollToSection('contact')} 
+          className="text-sm hover:text-purple-400 transition-colors"
+        >
+          Contact Us
+        </button>
       </div>
 
       <div className="flex items-center gap-4">

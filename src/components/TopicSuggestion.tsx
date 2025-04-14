@@ -16,10 +16,12 @@ interface TopicSuggestionProps {
 const TopicSuggestion: React.FC<TopicSuggestionProps> = ({ platformStats }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [suggestion, setSuggestion] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const generateSuggestion = async () => {
     setIsLoading(true);
     setSuggestion(null);
+    setError(null);
 
     try {
       let prompt = "Based on a coder's profile, suggest 3 DSA topics they should focus on next. ";
@@ -42,17 +44,26 @@ const TopicSuggestion: React.FC<TopicSuggestionProps> = ({ platformStats }) => {
 
       prompt += "For each topic, provide a brief explanation of why it's important and one specific problem they could start with.";
 
+      console.log("Sending prompt to suggest-topics function:", prompt);
+      
       const { data, error } = await supabase.functions.invoke("suggest-topics", {
         body: { prompt }
       });
 
       if (error) {
+        console.error("Supabase function error:", error);
         throw new Error(error.message);
+      }
+
+      if (!data || !data.suggestion) {
+        console.error("Invalid response from suggest-topics function:", data);
+        throw new Error("Invalid response from suggestion service");
       }
 
       setSuggestion(data.suggestion);
     } catch (error) {
       console.error("Error generating topic suggestion:", error);
+      setError("Failed to generate suggestions. Please try again later.");
       toast.error("Failed to generate topic suggestions. Please try again.");
       
       // Fallback suggestion if the API fails
@@ -91,6 +102,7 @@ const TopicSuggestion: React.FC<TopicSuggestionProps> = ({ platformStats }) => {
             <p className="text-muted-foreground mb-4">
               Click the button below to get personalized topic suggestions based on your current progress.
             </p>
+            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
           </div>
         )}
       </CardContent>
