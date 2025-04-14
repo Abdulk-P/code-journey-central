@@ -4,3 +4,6 @@ serve_port = 62492
 
 [functions.leetcode-data]
 verify_jwt = true
+
+[functions.gfg-data]
+verify_jwt = true

@@ -1,26 +1,194 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import MotivationalQuote from "@/components/MotivationalQuote";
+import { Loader2 } from "lucide-react";
+
+interface LeetCodeStats {
+  totalSolved: number;
+  easySolved: number;
+  mediumSolved: number;
+  hardSolved: number;
+  loading: boolean;
+  error: string | null;
+}
+
+interface GFGStats {
+  totalSolved: number;
+  easySolved: number;
+  mediumSolved: number;
+  basicSolved: number;
+  loading: boolean;
+  error: string | null;
+}
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
+  const [leetcodeStats, setLeetcodeStats] = useState<LeetCodeStats | null>(null);
+  const [gfgStats, setGfgStats] = useState<GFGStats | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  if (!user || !user.stats) {
-    return <div>Loading dashboard data...</div>;
-  }
+  // Generate some sample data
+  const getTopicAnalysis = () => {
+    let topicData = [
+      { topic: "Arrays", count: 0 },
+      { topic: "Strings", count: 0 },
+      { topic: "Dynamic Programming", count: 0 },
+      { topic: "Trees", count: 0 },
+      { topic: "Graphs", count: 0 }
+    ];
 
-  const { totalQuestions, activeDays, topicAnalysis, problemsSolvedByDay } = user.stats;
+    // If we have LeetCode data, distribute the solved problems across topics
+    if (leetcodeStats) {
+      const total = leetcodeStats.totalSolved;
+      if (total > 0) {
+        // Distribute total solved across random topics
+        const distribution = [0.3, 0.2, 0.2, 0.15, 0.15]; // 30%, 20%, 20%, 15%, 15%
+        topicData = topicData.map((item, index) => ({
+          ...item,
+          count: Math.round(total * distribution[index])
+        }));
+      }
+    }
+
+    // If we have GFG data, add more to the topic counts
+    if (gfgStats && gfgStats.totalSolved > 0) {
+      const distribution = [0.25, 0.25, 0.2, 0.15, 0.15]; // Different distribution
+      topicData = topicData.map((item, index) => ({
+        ...item,
+        count: item.count + Math.round(gfgStats.totalSolved * distribution[index])
+      }));
+    }
+
+    return topicData;
+  };
+
+  const getProblemsSolvedByDay = () => {
+    // Generate last 7 days
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      return date.toISOString().split('T')[0];
+    }).reverse();
+
+    // Generate random counts for each day if we have platform data
+    if (leetcodeStats || gfgStats) {
+      return last7Days.map(date => {
+        const randomCount = Math.floor(Math.random() * 5); // 0-4 problems per day
+        return { date, count: randomCount };
+      });
+    }
+    
+    // Default empty data
+    return last7Days.map(date => ({ date, count: 0 }));
+  };
+  
+  useEffect(() => {
+    const fetchPlatformData = async () => {
+      if (!user?.platforms || user.platforms.length === 0) {
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      
+      try {
+        // Find LeetCode and GFG platforms
+        const leetcodePlatform = user.platforms.find(p => p.name.toLowerCase() === "leetcode");
+        const gfgPlatform = user.platforms.find(p => p.name.toLowerCase() === "geeksforgeeks");
+        
+        // Fetch LeetCode data if available
+        if (leetcodePlatform) {
+          const { data: leetcodeData, error: leetcodeError } = await supabase.functions.invoke('leetcode-data', {
+            body: { username: leetcodePlatform.username }
+          });
+          
+          if (!leetcodeError && leetcodeData && !leetcodeData.error) {
+            setLeetcodeStats({
+              totalSolved: leetcodeData.data.totalSolved || 0,
+              easySolved: leetcodeData.data.easySolved || 0,
+              mediumSolved: leetcodeData.data.mediumSolved || 0,
+              hardSolved: leetcodeData.data.hardSolved || 0,
+              loading: false,
+              error: null
+            });
+          } else {
+            console.error("Error fetching LeetCode data:", leetcodeError || leetcodeData?.error);
+            setLeetcodeStats({
+              totalSolved: 0,
+              easySolved: 0,
+              mediumSolved: 0,
+              hardSolved: 0,
+              loading: false,
+              error: leetcodeError?.message || leetcodeData?.error || "Failed to fetch LeetCode data"
+            });
+          }
+        }
+        
+        // Fetch GFG data if available
+        if (gfgPlatform) {
+          const { data: gfgData, error: gfgError } = await supabase.functions.invoke('gfg-data', {
+            body: { username: gfgPlatform.username }
+          });
+          
+          if (!gfgError && gfgData && !gfgData.error) {
+            setGfgStats({
+              totalSolved: gfgData.data.info?.totalProblemsSolved || 0,
+              easySolved: gfgData.data.solvedStats?.easy?.count || 0,
+              mediumSolved: gfgData.data.solvedStats?.medium?.count || 0,
+              basicSolved: gfgData.data.solvedStats?.basic?.count || 0,
+              loading: false,
+              error: null
+            });
+          } else {
+            console.error("Error fetching GFG data:", gfgError || gfgData?.error);
+            setGfgStats({
+              totalSolved: 0,
+              easySolved: 0,
+              mediumSolved: 0,
+              basicSolved: 0,
+              loading: false,
+              error: gfgError?.message || gfgData?.error || "Failed to fetch GFG data"
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching platform data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPlatformData();
+  }, [user?.platforms]);
+  
+  // Calculate stats
+  const totalQuestions = (leetcodeStats?.totalSolved || 0) + (gfgStats?.totalSolved || 0);
+  const activeDays = user?.stats?.activeDays || 7; // Sample value
+  const topicAnalysis = getTopicAnalysis();
+  const problemsSolvedByDay = getProblemsSolvedByDay();
 
   // Colors for the pie chart
   const COLORS = ['#8b5cf6', '#a78bfa', '#c4b5fd', '#7c3aed', '#6d28d9'];
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Dashboard</h1>
       </div>
+
+      <MotivationalQuote />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="glass-card">
@@ -38,7 +206,7 @@ const Dashboard: React.FC = () => {
         <Card className="glass-card">
           <CardHeader className="pb-2">
             <CardDescription>Platforms</CardDescription>
-            <CardTitle className="text-3xl">{user.platforms?.length || 0}</CardTitle>
+            <CardTitle className="text-3xl">{user?.platforms?.length || 0}</CardTitle>
           </CardHeader>
         </Card>
         <Card className="glass-card">
@@ -122,10 +290,10 @@ const Dashboard: React.FC = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {user.platforms && user.platforms.length > 0 ? (
+            {user?.platforms && user.platforms.length > 0 ? (
               <ul className="space-y-3">
                 {user.platforms.map((platform) => (
-                  <li key={platform.name} className="flex items-center justify-between p-3 rounded-md bg-secondary/30">
+                  <li key={platform.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/30">
                     <div className="flex items-center">
                       <div className="font-medium">{platform.name}</div>
                     </div>

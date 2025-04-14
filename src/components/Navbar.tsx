@@ -1,9 +1,10 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { LogOut, Menu } from "lucide-react";
+import { toast } from "sonner";
 
 interface NavbarProps {
   toggleSidebar?: () => void;
@@ -11,6 +12,18 @@ interface NavbarProps {
 
 const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   const { isAuthenticated, logout, user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success("Successfully logged out");
+      navigate("/");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Failed to log out. Please try again.");
+    }
+  };
 
   return (
     <nav className="border-b border-secondary px-4 py-3 flex items-center justify-between bg-background">
@@ -37,7 +50,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
               <div className="text-sm text-muted-foreground">
                 {user?.firstName} {user?.lastName}
               </div>
-              <Button variant="ghost" size="icon" onClick={logout}>
+              <Button variant="ghost" size="icon" onClick={handleLogout}>
                 <LogOut className="h-5 w-5" />
               </Button>
             </div>

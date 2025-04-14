@@ -23,25 +23,25 @@ serve(async (req) => {
       );
     }
     
-    console.log(`Fetching LeetCode data for user: ${username}`);
+    console.log(`Fetching GeeksforGeeks data for user: ${username}`);
     
-    // LeetCode API endpoint (using the alternative API)
-    const leetcodeApiUrl = `https://leetcode-api-faisalshohag.vercel.app/${username}`;
+    // GeeksforGeeks API endpoint
+    const gfgApiUrl = `https://geeks-for-geeks-api.vercel.app/${username}`;
     
-    // Make the request to LeetCode API
-    const response = await fetch(leetcodeApiUrl);
+    // Make the request to GeeksforGeeks API
+    const response = await fetch(gfgApiUrl);
     
     if (!response.ok) {
-      console.error("LeetCode API Error:", response.status, response.statusText);
+      console.error("GFG API Error:", response.status, response.statusText);
       throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();
     
     // If user not found or API returns an error
-    if (data.error || data.status === 'failed') {
+    if (data.error) {
       return new Response(
-        JSON.stringify({ error: data.error || "User not found on LeetCode" }),
+        JSON.stringify({ error: data.error || "User not found on GeeksforGeeks" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -56,10 +56,10 @@ serve(async (req) => {
     );
     
   } catch (error) {
-    console.error("Error fetching LeetCode data:", error);
+    console.error("Error fetching GeeksforGeeks data:", error);
     
     return new Response(
-      JSON.stringify({ error: "Failed to fetch data from LeetCode" }),
+      JSON.stringify({ error: "Failed to fetch data from GeeksforGeeks" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
