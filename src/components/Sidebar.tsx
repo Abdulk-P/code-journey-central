@@ -10,7 +10,8 @@ import {
   User, 
   Link as LinkIcon, 
   Settings, 
-  X
+  X,
+  Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +31,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, closeSidebar }) => {
     { path: "/socials", label: "Socials", icon: <LinkIcon size={20} /> },
     { path: "/settings", label: "Settings", icon: <Settings size={20} /> }
   ];
+
+  // Add admin link for admin users
+  if (user?.isAdmin) {
+    navItems.push({ path: "/admin", label: "Admin", icon: <Shield size={20} /> });
+  }
 
   return (
     <div
