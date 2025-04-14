@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,10 +17,6 @@ export interface User {
   degree?: string;
   branch?: string;
   graduationYear?: number;
-  batchYear?: number;
-  department?: string;
-  collegeId?: string;
-  role?: string;
   platforms?: {
     id: string;
     name: string;
@@ -44,12 +41,6 @@ export interface User {
       count: number;
     }[];
   };
-  isAdmin?: boolean;
-  adminColleges?: {
-    id: string;
-    name: string;
-    title?: string;
-  }[];
 }
 
 interface AuthContextType {
@@ -61,7 +52,6 @@ interface AuthContextType {
   logout: () => void;
   updateUserInfo: (userData: Partial<User>) => Promise<void>;
   fetchUserData: () => Promise<void>;
-  isCollegeAdmin: (collegeId: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -139,41 +129,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error("Error fetching socials:", socialsError);
       }
 
-      // Fetch user roles
-      const { data: userRoles, error: userRolesError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', authUser.id);
-
-      if (userRolesError) {
-        console.error("Error fetching user roles:", userRolesError);
-      }
-
-      const isAdmin = userRoles?.some(r => r.role === 'admin') || false;
-
-      // Fetch admin colleges if user is an admin
-      let adminColleges = [];
-      if (isAdmin) {
-        const { data: adminData, error: adminError } = await supabase
-          .from('college_admins')
-          .select(`
-            id,
-            title,
-            college:colleges(id, name)
-          `)
-          .eq('user_id', authUser.id);
-
-        if (adminError) {
-          console.error("Error fetching admin colleges:", adminError);
-        } else if (adminData) {
-          adminColleges = adminData.map(item => ({
-            id: item.college.id,
-            name: item.college.name,
-            title: item.title
-          }));
-        }
-      }
-
       // Construct user object from data
       const userData: User = {
         id: authUser.id,
@@ -187,11 +142,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         degree: profileData?.degree || '',
         branch: profileData?.branch || '',
         graduationYear: profileData?.graduation_year,
-        batchYear: profileData?.batch_year,
-        department: profileData?.department,
-        collegeId: profileData?.college_id,
-        isAdmin,
-        adminColleges: isAdmin ? adminColleges : [],
         platforms: platformsData?.map(p => ({
           id: p.id,
           name: p.name,
@@ -395,12 +345,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Check if user is an admin for a specific college
-  const isCollegeAdmin = (collegeId: string): boolean => {
-    if (!user || !user.isAdmin || !user.adminColleges) return false;
-    return user.adminColleges.some(college => college.id === collegeId);
-  };
-
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -410,8 +354,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signup, 
       logout,
       updateUserInfo,
-      fetchUserData,
-      isCollegeAdmin
+      fetchUserData
     }}>
       {children}
     </AuthContext.Provider>

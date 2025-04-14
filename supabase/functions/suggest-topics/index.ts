@@ -1,64 +1,70 @@
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { OpenAI } from 'https://esm.sh/openai@4.20.1';
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Handle CORS preflight requests
-Deno.serve(async (req) => {
+serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { department, difficulty, count = 5 } = await req.json();
+    const { prompt } = await req.json();
 
-    // Initialize OpenAI client
-    const openai = new OpenAI({
-      apiKey: Deno.env.get('OPENAI_API_KEY') || '',
-    });
-
-    if (!openai.apiKey) {
-      throw new Error('OpenAI API key not found');
+    if (!openAIApiKey) {
+      throw new Error('Missing OpenAI API key. Please set the OPENAI_API_KEY in the Edge Function secrets.');
     }
 
-    // Construct the prompt for topic suggestions
-    const prompt = `Suggest ${count} programming problem topics for computer science students${department ? ` in the ${department} department` : ''}${difficulty ? ` with ${difficulty} difficulty level` : ''}.
-    
-    Format the response as a JSON array of objects with these properties:
-    - title: A concise problem title
-    - description: A brief description of the problem (2-3 sentences)
-    - topics: An array of relevant topics covered (e.g., "arrays", "dynamic programming")
-    - difficulty: A rating from 1-5 where 1 is easiest and 5 is hardest
-    
-    Make the problems interesting, practical, and appropriate for college students.`;
+    console.log('Making request to OpenAI API with prompt:', prompt);
 
-    // Call OpenAI API
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        { role: "system", content: "You are an expert computer science educator who designs programming problems for college students." },
-        { role: "user", content: prompt }
-      ],
-      response_format: { type: "json_object" }
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'You are an expert DSA (Data Structures and Algorithms) tutor. Provide concise, helpful suggestions for what topics a programmer should study next based on their current progress.' },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+      }),
     });
 
-    const responseText = completion.choices[0].message.content;
-    const topics = JSON.parse(responseText);
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('OpenAI API error response:', errorData);
+      throw new Error(`OpenAI API responded with status ${response.status}: ${errorData.error?.message || 'Unknown error'}`);
+    }
 
-    // Return the suggested topics
-    return new Response(JSON.stringify({ topics: topics.topics || topics }), {
+    const data = await response.json();
+    
+    if (data.error) {
+      console.error('OpenAI API returned an error:', data.error);
+      throw new Error(`OpenAI API error: ${data.error.message}`);
+    }
+
+    const suggestion = data.choices[0].message.content;
+    console.log('Successfully generated suggestion');
+
+    return new Response(JSON.stringify({ suggestion }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
     });
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error('Error in suggest-topics function:', error);
     return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });

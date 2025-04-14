@@ -1,5 +1,12 @@
 
 project_id = "zemofhppkgtrxkbdrsgf"
+serve_port = 62492
 
-[functions."suggest-topics"]
-verify_jwt = false
+[functions.leetcode-data]
+verify_jwt = true
+
+[functions.gfg-data]
+verify_jwt = true
+
+[functions.suggest-topics]
+verify_jwt = true

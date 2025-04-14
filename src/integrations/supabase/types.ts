@@ -9,230 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      assignment_problems: {
-        Row: {
-          assignment_id: string
-          created_at: string | null
-          difficulty: string | null
-          id: string
-          platform: string
-          problem_id: string
-          problem_title: string
-        }
-        Insert: {
-          assignment_id: string
-          created_at?: string | null
-          difficulty?: string | null
-          id?: string
-          platform: string
-          problem_id: string
-          problem_title: string
-        }
-        Update: {
-          assignment_id?: string
-          created_at?: string | null
-          difficulty?: string | null
-          id?: string
-          platform?: string
-          problem_id?: string
-          problem_title?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "assignment_problems_assignment_id_fkey"
-            columns: ["assignment_id"]
-            isOneToOne: false
-            referencedRelation: "assignments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      assignment_submissions: {
-        Row: {
-          assignment_id: string
-          created_at: string | null
-          id: string
-          problem_id: string
-          status: string
-          submitted_at: string | null
-          user_id: string
-        }
-        Insert: {
-          assignment_id: string
-          created_at?: string | null
-          id?: string
-          problem_id: string
-          status?: string
-          submitted_at?: string | null
-          user_id: string
-        }
-        Update: {
-          assignment_id?: string
-          created_at?: string | null
-          id?: string
-          problem_id?: string
-          status?: string
-          submitted_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "assignment_submissions_assignment_id_fkey"
-            columns: ["assignment_id"]
-            isOneToOne: false
-            referencedRelation: "assignments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "assignment_submissions_problem_id_fkey"
-            columns: ["problem_id"]
-            isOneToOne: false
-            referencedRelation: "assignment_problems"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      assignments: {
-        Row: {
-          batch_year: number | null
-          college_id: string
-          created_at: string | null
-          created_by: string
-          department: string | null
-          description: string | null
-          due_date: string | null
-          id: string
-          title: string
-        }
-        Insert: {
-          batch_year?: number | null
-          college_id: string
-          created_at?: string | null
-          created_by: string
-          department?: string | null
-          description?: string | null
-          due_date?: string | null
-          id?: string
-          title: string
-        }
-        Update: {
-          batch_year?: number | null
-          college_id?: string
-          created_at?: string | null
-          created_by?: string
-          department?: string | null
-          description?: string | null
-          due_date?: string | null
-          id?: string
-          title?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "assignments_college_id_fkey"
-            columns: ["college_id"]
-            isOneToOne: false
-            referencedRelation: "colleges"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      college_achievements: {
-        Row: {
-          achievement_date: string | null
-          college_id: string
-          created_at: string | null
-          description: string | null
-          featured: boolean | null
-          id: string
-          title: string
-          user_id: string | null
-        }
-        Insert: {
-          achievement_date?: string | null
-          college_id: string
-          created_at?: string | null
-          description?: string | null
-          featured?: boolean | null
-          id?: string
-          title: string
-          user_id?: string | null
-        }
-        Update: {
-          achievement_date?: string | null
-          college_id?: string
-          created_at?: string | null
-          description?: string | null
-          featured?: boolean | null
-          id?: string
-          title?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "college_achievements_college_id_fkey"
-            columns: ["college_id"]
-            isOneToOne: false
-            referencedRelation: "colleges"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      college_admins: {
-        Row: {
-          college_id: string
-          created_at: string | null
-          id: string
-          title: string | null
-          user_id: string
-        }
-        Insert: {
-          college_id: string
-          created_at?: string | null
-          id?: string
-          title?: string | null
-          user_id: string
-        }
-        Update: {
-          college_id?: string
-          created_at?: string | null
-          id?: string
-          title?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "college_admins_college_id_fkey"
-            columns: ["college_id"]
-            isOneToOne: false
-            referencedRelation: "colleges"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      colleges: {
-        Row: {
-          country: string | null
-          created_at: string | null
-          domain: string | null
-          id: string
-          name: string
-        }
-        Insert: {
-          country?: string | null
-          created_at?: string | null
-          domain?: string | null
-          id?: string
-          name: string
-        }
-        Update: {
-          country?: string | null
-          created_at?: string | null
-          domain?: string | null
-          id?: string
-          name?: string
-        }
-        Relationships: []
-      }
       platforms: {
         Row: {
           created_at: string | null
@@ -263,15 +39,12 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
-          batch_year: number | null
           bio: string | null
           branch: string | null
           college: string | null
-          college_id: string | null
           country: string | null
           created_at: string | null
           degree: string | null
-          department: string | null
           email: string | null
           first_name: string | null
           graduation_year: number | null
@@ -281,15 +54,12 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
-          batch_year?: number | null
           bio?: string | null
           branch?: string | null
           college?: string | null
-          college_id?: string | null
           country?: string | null
           created_at?: string | null
           degree?: string | null
-          department?: string | null
           email?: string | null
           first_name?: string | null
           graduation_year?: number | null
@@ -299,15 +69,12 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
-          batch_year?: number | null
           bio?: string | null
           branch?: string | null
           college?: string | null
-          college_id?: string | null
           country?: string | null
           created_at?: string | null
           degree?: string | null
-          department?: string | null
           email?: string | null
           first_name?: string | null
           graduation_year?: number | null
@@ -315,15 +82,7 @@ export type Database = {
           last_name?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_college_id_fkey"
-            columns: ["college_id"]
-            isOneToOne: false
-            referencedRelation: "colleges"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       socials: {
         Row: {
@@ -358,46 +117,15 @@ export type Database = {
         }
         Relationships: []
       }
-      user_roles: {
-        Row: {
-          created_at: string | null
-          id: string
-          role: Database["public"]["Enums"]["user_role"]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          role?: Database["public"]["Enums"]["user_role"]
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          role?: Database["public"]["Enums"]["user_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      has_role: {
-        Args: {
-          _user_id: string
-          _role: Database["public"]["Enums"]["user_role"]
-        }
-        Returns: boolean
-      }
-      is_college_admin: {
-        Args: { _user_id: string; _college_id: string }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
-      user_role: "student" | "admin"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -512,8 +240,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      user_role: ["student", "admin"],
-    },
+    Enums: {},
   },
 } as const

@@ -27,18 +27,7 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
   };
 
   const handleLogoClick = () => {
-    if (location.pathname.startsWith('/dashboard') || 
-        location.pathname.startsWith('/profile') || 
-        location.pathname.startsWith('/platforms') ||
-        location.pathname.startsWith('/socials') ||
-        location.pathname.startsWith('/settings') ||
-        location.pathname.startsWith('/admin')) {
-      // If on a dashboard or admin page, stay in the dashboard environment
-      navigate("/dashboard");
-    } else {
-      // If on public pages, go to home
-      navigate("/");
-    }
+    navigate("/");
   };
 
   const scrollToSection = (sectionId: string) => {
@@ -74,28 +63,24 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
       </div>
 
       <div className="hidden md:flex items-center space-x-6">
-        {location.pathname === "/" && (
-          <>
-            <button 
-              onClick={() => scrollToSection('features')} 
-              className="text-sm hover:text-purple-400 transition-colors"
-            >
-              Features
-            </button>
-            <button 
-              onClick={() => scrollToSection('about')} 
-              className="text-sm hover:text-purple-400 transition-colors"
-            >
-              About
-            </button>
-            <button 
-              onClick={() => scrollToSection('contact')} 
-              className="text-sm hover:text-purple-400 transition-colors"
-            >
-              Contact Us
-            </button>
-          </>
-        )}
+        <button 
+          onClick={() => scrollToSection('features')} 
+          className="text-sm hover:text-purple-400 transition-colors"
+        >
+          Features
+        </button>
+        <button 
+          onClick={() => scrollToSection('about')} 
+          className="text-sm hover:text-purple-400 transition-colors"
+        >
+          About
+        </button>
+        <button 
+          onClick={() => scrollToSection('contact')} 
+          className="text-sm hover:text-purple-400 transition-colors"
+        >
+          Contact Us
+        </button>
       </div>
 
       <div className="flex items-center gap-4">

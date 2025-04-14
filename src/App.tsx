@@ -16,7 +16,6 @@ import Profile from "@/pages/Profile";
 import Socials from "@/pages/Socials";
 import Settings from "@/pages/Settings";
 import NotFound from "@/pages/NotFound";
-import AdminDashboard from "@/pages/AdminDashboard";
 
 // Layouts
 import DashboardLayout from "@/components/DashboardLayout";
@@ -43,7 +42,6 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/socials" element={<Socials />} />
               <Route path="/settings" element={<Settings />} />
-              <Route path="/admin" element={<AdminDashboard />} />
             </Route>
             
             {/* Catch-all route */}
