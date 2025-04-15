@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -145,6 +146,7 @@ const Platforms: React.FC = () => {
   const [isLoading, setIsLoading] = useState<Record<string, boolean>>({});
   const [leetcodeStats, setLeetcodeStats] = useState<PlatformStats>(defaultLeetCodeStats);
   const [gfgStats, setGfgStats] = useState<GFGStats>(defaultGFGStats);
+  const [abortControllers, setAbortControllers] = useState<Record<string, AbortController>>({});
 
   // Fetch platform stats when component mounts or user changes
   useEffect(() => {
@@ -157,19 +159,45 @@ const Platforms: React.FC = () => {
         }
       });
     }
+    
+    // Cleanup function to abort any ongoing requests when unmounting
+    return () => {
+      Object.values(abortControllers).forEach(controller => {
+        if (controller) controller.abort();
+      });
+    };
   }, [user?.platforms]);
 
   const fetchLeetCodeStats = async (username: string) => {
     try {
+      // Cancel previous request if it exists
+      if (abortControllers['leetcode']) {
+        abortControllers['leetcode'].abort();
+      }
+      
+      // Create a new abort controller for this request
+      const controller = new AbortController();
+      setAbortControllers(prev => ({ ...prev, 'leetcode': controller }));
+      
       setLeetcodeStats(prev => ({
         ...prev,
         loading: true,
         error: null
       }));
 
+      // Set timeout for the request (10 seconds)
+      const timeoutId = setTimeout(() => {
+        if (controller && !controller.signal.aborted) {
+          controller.abort();
+          throw new Error("Request timed out");
+        }
+      }, 10000);
+
       const { data, error } = await supabase.functions.invoke('leetcode-data', {
         body: { username }
       });
+      
+      clearTimeout(timeoutId);
 
       if (error) {
         throw error;
@@ -202,23 +230,49 @@ const Platforms: React.FC = () => {
       setLeetcodeStats(prev => ({
         ...prev,
         loading: false, 
-        error: error.message || "Failed to fetch LeetCode stats"
+        error: error.name === "AbortError" 
+          ? "Request timed out. Please try again."
+          : error.message || "Failed to fetch LeetCode stats"
       }));
-      toast.error(`Error fetching LeetCode stats: ${error.message || "Unknown error"}`);
+      
+      if (error.name !== "AbortError") {
+        toast.error(`Error fetching LeetCode stats: ${error.message || "Unknown error"}`);
+      }
+    } finally {
+      setAbortControllers(prev => ({ ...prev, 'leetcode': null }));
     }
   };
 
   const fetchGFGStats = async (username: string) => {
     try {
+      // Cancel previous request if it exists
+      if (abortControllers['gfg']) {
+        abortControllers['gfg'].abort();
+      }
+      
+      // Create a new abort controller for this request
+      const controller = new AbortController();
+      setAbortControllers(prev => ({ ...prev, 'gfg': controller }));
+      
       setGfgStats(prev => ({
         ...prev,
         loading: true,
         error: null
       }));
 
+      // Set timeout for the request (10 seconds)
+      const timeoutId = setTimeout(() => {
+        if (controller && !controller.signal.aborted) {
+          controller.abort();
+          throw new Error("Request timed out");
+        }
+      }, 10000);
+
       const { data, error } = await supabase.functions.invoke('gfg-data', {
         body: { username }
       });
+      
+      clearTimeout(timeoutId);
 
       if (error) {
         throw error;
@@ -258,9 +312,16 @@ const Platforms: React.FC = () => {
       setGfgStats(prev => ({
         ...prev,
         loading: false, 
-        error: error.message || "Failed to fetch GFG stats"
+        error: error.name === "AbortError" 
+          ? "Request timed out. Please try again."
+          : error.message || "Failed to fetch GFG stats"
       }));
-      toast.error(`Error fetching GFG stats: ${error.message || "Unknown error"}`);
+      
+      if (error.name !== "AbortError") {
+        toast.error(`Error fetching GFG stats: ${error.message || "Unknown error"}`);
+      }
+    } finally {
+      setAbortControllers(prev => ({ ...prev, 'gfg': null }));
     }
   };
 
@@ -290,33 +351,83 @@ const Platforms: React.FC = () => {
       // For LeetCode and GFG, verify the user exists before adding
       if (platformId === "leetcode") {
         try {
+          // Cancel previous verification request if exists
+          if (abortControllers[`verify-${platformId}`]) {
+            abortControllers[`verify-${platformId}`].abort();
+          }
+          
+          // Create new controller for this verification
+          const controller = new AbortController();
+          setAbortControllers(prev => ({ ...prev, [`verify-${platformId}`]: controller }));
+          
+          // Set timeout (6 seconds)
+          const timeoutId = setTimeout(() => {
+            if (controller && !controller.signal.aborted) {
+              controller.abort();
+              throw new Error("Verification timed out");
+            }
+          }, 6000);
+          
           const { data, error } = await supabase.functions.invoke('leetcode-data', {
             body: { username: platformUsername[platformId] }
           });
+          
+          clearTimeout(timeoutId);
           
           if (error || data.error) {
             throw new Error(data?.error || "User not found on LeetCode");
           }
           verified = true;
         } catch (error: any) {
-          toast.error(`Verification failed: ${error.message || "User not found on LeetCode"}`);
+          if (error.name === "AbortError") {
+            toast.error("Verification timed out. Please try again later.");
+          } else {
+            toast.error(`Verification failed: ${error.message || "User not found on LeetCode"}`);
+          }
           setIsLoading(prev => ({ ...prev, [platformId]: false }));
           return;
+        } finally {
+          setAbortControllers(prev => ({ ...prev, [`verify-${platformId}`]: null }));
         }
       } else if (platformId === "gfg") {
         try {
+          // Cancel previous verification request if exists
+          if (abortControllers[`verify-${platformId}`]) {
+            abortControllers[`verify-${platformId}`].abort();
+          }
+          
+          // Create new controller for this verification
+          const controller = new AbortController();
+          setAbortControllers(prev => ({ ...prev, [`verify-${platformId}`]: controller }));
+          
+          // Set timeout (6 seconds)
+          const timeoutId = setTimeout(() => {
+            if (controller && !controller.signal.aborted) {
+              controller.abort();
+              throw new Error("Verification timed out");
+            }
+          }, 6000);
+          
           const { data, error } = await supabase.functions.invoke('gfg-data', {
             body: { username: platformUsername[platformId] }
           });
+          
+          clearTimeout(timeoutId);
           
           if (error || data.error) {
             throw new Error(data?.error || "User not found on GeeksforGeeks");
           }
           verified = true;
         } catch (error: any) {
-          toast.error(`Verification failed: ${error.message || "User not found on GeeksforGeeks"}`);
+          if (error.name === "AbortError") {
+            toast.error("Verification timed out. Please try again later.");
+          } else {
+            toast.error(`Verification failed: ${error.message || "User not found on GeeksforGeeks"}`);
+          }
           setIsLoading(prev => ({ ...prev, [platformId]: false }));
           return;
+        } finally {
+          setAbortControllers(prev => ({ ...prev, [`verify-${platformId}`]: null }));
         }
       } else {
         // Mock verification for other platforms

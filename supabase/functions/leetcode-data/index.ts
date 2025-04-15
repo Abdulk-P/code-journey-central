@@ -28,33 +28,50 @@ serve(async (req) => {
     // LeetCode API endpoint (using the alternative API)
     const leetcodeApiUrl = `https://leetcode-api-faisalshohag.vercel.app/${username}`;
     
-    // Make the request to LeetCode API
-    const response = await fetch(leetcodeApiUrl);
+    // Make the request to LeetCode API with a timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
     
-    if (!response.ok) {
-      console.error("LeetCode API Error:", response.status, response.statusText);
-      throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    
-    // If user not found or API returns an error
-    if (data.error || data.status === 'failed') {
+    try {
+      const response = await fetch(leetcodeApiUrl, {
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        console.error("LeetCode API Error:", response.status, response.statusText);
+        throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      // If user not found or API returns an error
+      if (data.error || data.status === 'failed') {
+        return new Response(
+          JSON.stringify({ error: data.error || "User not found on LeetCode" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      // Return the user data
       return new Response(
-        JSON.stringify({ error: data.error || "User not found on LeetCode" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ 
+          success: true, 
+          data: data 
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        console.error("LeetCode API request timed out for user:", username);
+        return new Response(
+          JSON.stringify({ error: "Request timed out. The LeetCode API is taking too long to respond." }),
+          { status: 408, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      throw error;
     }
-    
-    // Return the user data
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        data: data 
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
-    
   } catch (error) {
     console.error("Error fetching LeetCode data:", error);
     
