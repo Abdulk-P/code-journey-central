@@ -1,10 +1,11 @@
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Lightbulb, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface TopicSuggestionProps {
   platformStats: {
@@ -17,8 +18,19 @@ const TopicSuggestion: React.FC<TopicSuggestionProps> = ({ platformStats }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [suggestion, setSuggestion] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
 
-  const generateSuggestion = async () => {
+  // Use useCallback to memoize the function
+  const generateSuggestion = useCallback(async () => {
+    // Cancel previous request if it exists
+    if (abortController) {
+      abortController.abort();
+    }
+    
+    // Create a new abort controller for this request
+    const newController = new AbortController();
+    setAbortController(newController);
+    
     setIsLoading(true);
     setSuggestion(null);
     setError(null);
@@ -46,9 +58,19 @@ const TopicSuggestion: React.FC<TopicSuggestionProps> = ({ platformStats }) => {
 
       console.log("Sending prompt to suggest-topics function:", prompt);
       
+      // Set timeout for the request
+      const timeoutId = setTimeout(() => {
+        if (newController && !newController.signal.aborted) {
+          newController.abort();
+          throw new Error("Request timed out");
+        }
+      }, 10000); // 10 second timeout
+      
       const { data, error } = await supabase.functions.invoke("suggest-topics", {
         body: { prompt }
       });
+      
+      clearTimeout(timeoutId);
 
       if (error) {
         console.error("Supabase function error:", error);
@@ -62,14 +84,17 @@ const TopicSuggestion: React.FC<TopicSuggestionProps> = ({ platformStats }) => {
 
       setSuggestion(data.suggestion);
       toast.success("Successfully generated suggestions!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating topic suggestion:", error);
-      setError("Failed to generate suggestions. Please try again.");
-      toast.error("Failed to generate topic suggestions. Please try again.");
+      if (error.message !== "Request timed out" && error.name !== "AbortError") {
+        setError("Failed to generate suggestions. Please try again.");
+        toast.error("Failed to generate topic suggestions. Please try again.");
+      }
     } finally {
       setIsLoading(false);
+      setAbortController(null);
     }
-  };
+  }, [platformStats]);
 
   return (
     <Card className="glass-card">
@@ -84,8 +109,12 @@ const TopicSuggestion: React.FC<TopicSuggestionProps> = ({ platformStats }) => {
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <div className="flex justify-center items-center h-40">
-            <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-4 w-4/5" />
           </div>
         ) : suggestion ? (
           <div className="prose prose-sm max-w-none">
@@ -125,4 +154,4 @@ const TopicSuggestion: React.FC<TopicSuggestionProps> = ({ platformStats }) => {
   );
 };
 
-export default TopicSuggestion;
+export default React.memo(TopicSuggestion);

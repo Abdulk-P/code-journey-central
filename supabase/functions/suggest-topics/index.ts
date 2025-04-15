@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -9,6 +8,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Cache implementation for frequently requested suggestions
+const suggestionCache = new Map();
+const CACHE_TTL = 1000 * 60 * 10; // 10 minutes
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -17,12 +20,27 @@ serve(async (req) => {
 
   try {
     const { prompt } = await req.json();
+    
+    // Check cache for similar prompts
+    const cacheKey = createCacheKey(prompt);
+    const cachedResponse = checkCache(cacheKey);
+    
+    if (cachedResponse) {
+      console.log('Returning cached suggestion');
+      return new Response(JSON.stringify({ suggestion: cachedResponse }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     if (!openAIApiKey) {
       console.error('Missing OpenAI API key');
       // Return a fallback response instead of throwing an error
+      const fallbackSuggestion = generateFallbackSuggestion(prompt);
+      // Cache the fallback response
+      updateCache(cacheKey, fallbackSuggestion);
+      
       return new Response(JSON.stringify({ 
-        suggestion: generateFallbackSuggestion(prompt) 
+        suggestion: fallbackSuggestion 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -51,8 +69,12 @@ serve(async (req) => {
       const errorData = await response.json();
       console.error('OpenAI API error response:', errorData);
       // Return a fallback response instead of throwing an error
+      const fallbackSuggestion = generateFallbackSuggestion(prompt);
+      // Cache the fallback response
+      updateCache(cacheKey, fallbackSuggestion);
+      
       return new Response(JSON.stringify({ 
-        suggestion: generateFallbackSuggestion(prompt) 
+        suggestion: fallbackSuggestion 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -63,8 +85,12 @@ serve(async (req) => {
     if (data.error) {
       console.error('OpenAI API returned an error:', data.error);
       // Return a fallback response instead of throwing an error
+      const fallbackSuggestion = generateFallbackSuggestion(prompt);
+      // Cache the fallback response
+      updateCache(cacheKey, fallbackSuggestion);
+      
       return new Response(JSON.stringify({ 
-        suggestion: generateFallbackSuggestion(prompt) 
+        suggestion: fallbackSuggestion 
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -72,6 +98,9 @@ serve(async (req) => {
 
     const suggestion = data.choices[0].message.content;
     console.log('Successfully generated suggestion');
+    
+    // Cache the successful response
+    updateCache(cacheKey, suggestion);
 
     return new Response(JSON.stringify({ suggestion }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -79,14 +108,56 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in suggest-topics function:', error);
     // Return a fallback response instead of throwing an error
+    const fallbackSuggestion = generateFallbackSuggestion();
+    
     return new Response(JSON.stringify({ 
-      suggestion: generateFallbackSuggestion() 
+      suggestion: fallbackSuggestion 
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200, // Return 200 instead of 500
     });
   }
 });
+
+// Create a simplified hash for caching
+function createCacheKey(prompt: string): string {
+  // Create a simplified version of the prompt for caching
+  // Remove exact numbers but keep the general structure
+  const simplifiedPrompt = prompt
+    .replace(/\d+/g, 'N')
+    .toLowerCase()
+    .trim();
+  
+  return simplifiedPrompt;
+}
+
+// Check if a valid cache entry exists
+function checkCache(key: string): string | null {
+  if (suggestionCache.has(key)) {
+    const { value, expiry } = suggestionCache.get(key);
+    if (expiry > Date.now()) {
+      return value;
+    } else {
+      // Clear expired cache
+      suggestionCache.delete(key);
+    }
+  }
+  return null;
+}
+
+// Update the cache with a new entry
+function updateCache(key: string, value: string): void {
+  suggestionCache.set(key, {
+    value,
+    expiry: Date.now() + CACHE_TTL
+  });
+  
+  // Clean up old cache entries if cache gets too large
+  if (suggestionCache.size > 50) {
+    const oldestKey = [...suggestionCache.keys()][0];
+    suggestionCache.delete(oldestKey);
+  }
+}
 
 // Function to generate fallback suggestions
 function generateFallbackSuggestion(prompt?: string) {

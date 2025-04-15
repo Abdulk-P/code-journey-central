@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Navigate, Outlet, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "./Navbar";
@@ -18,6 +18,16 @@ const DashboardLayout: React.FC = () => {
   const closeSidebar = () => {
     setSidebarOpen(false);
   };
+
+  // Memoize the HomeButton component to prevent unnecessary re-renders
+  const HomeButton = useMemo(() => (
+    <Button variant="outline" asChild size="sm" className="flex items-center gap-1">
+      <Link to="/">
+        <Home className="h-4 w-4" />
+        Back to Home
+      </Link>
+    </Button>
+  ), []);
 
   if (isLoading) {
     return (
@@ -41,12 +51,7 @@ const DashboardLayout: React.FC = () => {
           onClick={closeSidebar}
         >
           <div className="mb-4">
-            <Button variant="outline" asChild size="sm" className="flex items-center gap-1">
-              <Link to="/">
-                <Home className="h-4 w-4" />
-                Back to Home
-              </Link>
-            </Button>
+            {HomeButton}
           </div>
           <Outlet />
         </main>
@@ -55,4 +60,5 @@ const DashboardLayout: React.FC = () => {
   );
 };
 
-export default DashboardLayout;
+// Use React.memo to prevent unnecessary re-renders
+export default React.memo(DashboardLayout);
