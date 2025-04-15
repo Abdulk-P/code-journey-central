@@ -90,7 +90,12 @@ const Navbar: React.FC<NavbarProps> = ({ toggleSidebar }) => {
               <div className="text-sm text-muted-foreground">
                 {user?.firstName} {user?.lastName}
               </div>
-              <Button variant="ghost" size="icon" onClick={handleLogout}>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleLogout}
+                className="hover:bg-red-100 hover:text-red-500"
+              >
                 <LogOut className="h-5 w-5" />
               </Button>
             </div>

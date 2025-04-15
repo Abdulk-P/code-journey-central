@@ -5,9 +5,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { LogOut } from "lucide-react";
 
 const Settings: React.FC = () => {
   const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success("Successfully logged out");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Failed to log out. Please try again.");
+    }
+  };
 
   const handleDeleteAccount = () => {
     const confirm = window.confirm(
@@ -25,6 +36,14 @@ const Settings: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Settings</h1>
+        <Button 
+          variant="outline" 
+          onClick={handleLogout}
+          className="flex items-center gap-2 border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign Out
+        </Button>
       </div>
 
       <Card className="glass-card">
@@ -87,8 +106,10 @@ const Settings: React.FC = () => {
           <div>
             <Button
               variant="outline"
-              onClick={() => logout()}
+              onClick={handleLogout}
+              className="flex items-center gap-2"
             >
+              <LogOut className="h-4 w-4" />
               Sign Out
             </Button>
           </div>
