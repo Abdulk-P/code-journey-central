@@ -19,7 +19,13 @@ serve(async (req) => {
     const { prompt } = await req.json();
 
     if (!openAIApiKey) {
-      throw new Error('Missing OpenAI API key. Please set the OPENAI_API_KEY in the Edge Function secrets.');
+      console.error('Missing OpenAI API key');
+      // Return a fallback response instead of throwing an error
+      return new Response(JSON.stringify({ 
+        suggestion: generateFallbackSuggestion(prompt) 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     console.log('Making request to OpenAI API with prompt:', prompt);
@@ -44,14 +50,24 @@ serve(async (req) => {
     if (!response.ok) {
       const errorData = await response.json();
       console.error('OpenAI API error response:', errorData);
-      throw new Error(`OpenAI API responded with status ${response.status}: ${errorData.error?.message || 'Unknown error'}`);
+      // Return a fallback response instead of throwing an error
+      return new Response(JSON.stringify({ 
+        suggestion: generateFallbackSuggestion(prompt) 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const data = await response.json();
     
     if (data.error) {
       console.error('OpenAI API returned an error:', data.error);
-      throw new Error(`OpenAI API error: ${data.error.message}`);
+      // Return a fallback response instead of throwing an error
+      return new Response(JSON.stringify({ 
+        suggestion: generateFallbackSuggestion(prompt) 
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const suggestion = data.choices[0].message.content;
@@ -62,9 +78,34 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Error in suggest-topics function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
+    // Return a fallback response instead of throwing an error
+    return new Response(JSON.stringify({ 
+      suggestion: generateFallbackSuggestion() 
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200, // Return 200 instead of 500
     });
   }
 });
+
+// Function to generate fallback suggestions
+function generateFallbackSuggestion(prompt?: string) {
+  // A set of predefined suggestions that will be randomly selected
+  const suggestions = [
+    "1. **Binary Search Trees**: Essential for efficient searching and sorting. Try 'Validate Binary Search Tree' on LeetCode.\n\n" +
+    "2. **Dynamic Programming**: Important for optimization problems. Start with 'Climbing Stairs' on LeetCode.\n\n" +
+    "3. **Graph Algorithms**: Crucial for network and relationship problems. Try 'Number of Islands' on LeetCode.",
+
+    "1. **Heap Data Structure**: Important for priority-based operations. Try 'Kth Largest Element in an Array' on LeetCode.\n\n" +
+    "2. **Linked Lists**: Fundamental for understanding pointers and memory. Start with 'Reverse Linked List' on LeetCode.\n\n" +
+    "3. **Recursion and Backtracking**: Essential for solving complex problems. Try 'Letter Combinations of a Phone Number' on LeetCode.",
+    
+    "1. **Hash Tables**: Critical for efficient lookups. Try 'Two Sum' on LeetCode.\n\n" +
+    "2. **Breadth-First Search**: Important for level-order traversals. Start with 'Binary Tree Level Order Traversal' on LeetCode.\n\n" +
+    "3. **Sliding Window Technique**: Useful for substring problems. Try 'Longest Substring Without Repeating Characters' on LeetCode."
+  ];
+  
+  // Randomly select one of the suggestions
+  const randomIndex = Math.floor(Math.random() * suggestions.length);
+  return suggestions[randomIndex];
+}

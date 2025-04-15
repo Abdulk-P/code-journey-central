@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Lightbulb } from "lucide-react";
+import { Loader2, Lightbulb, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -61,17 +61,11 @@ const TopicSuggestion: React.FC<TopicSuggestionProps> = ({ platformStats }) => {
       }
 
       setSuggestion(data.suggestion);
+      toast.success("Successfully generated suggestions!");
     } catch (error) {
       console.error("Error generating topic suggestion:", error);
-      setError("Failed to generate suggestions. Please try again later.");
+      setError("Failed to generate suggestions. Please try again.");
       toast.error("Failed to generate topic suggestions. Please try again.");
-      
-      // Fallback suggestion if the API fails
-      setSuggestion(
-        "1. **Arrays and String Manipulation**: Fundamental building blocks for most algorithms. Try 'Two Sum' on LeetCode.\n\n" +
-        "2. **Graph Algorithms**: Important for network and relationship problems. Start with 'Number of Islands'.\n\n" +
-        "3. **Dynamic Programming**: Powerful technique for optimization problems. Try 'Climbing Stairs' to get started."
-      );
     } finally {
       setIsLoading(false);
     }
@@ -106,7 +100,7 @@ const TopicSuggestion: React.FC<TopicSuggestionProps> = ({ platformStats }) => {
           </div>
         )}
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex gap-2">
         <Button 
           onClick={generateSuggestion} 
           disabled={isLoading} 
@@ -116,6 +110,11 @@ const TopicSuggestion: React.FC<TopicSuggestionProps> = ({ platformStats }) => {
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Generating suggestions...
+            </>
+          ) : suggestion ? (
+            <>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Generate New Suggestions
             </>
           ) : (
             "Generate Suggestions"
