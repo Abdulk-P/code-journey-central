@@ -2,7 +2,7 @@
 import React, { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Lightbulb, RefreshCw } from "lucide-react";
+import { Loader2, Lightbulb, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,7 +21,7 @@ const TopicSuggestion: React.FC<TopicSuggestionProps> = ({ platformStats }) => {
   const [abortController, setAbortController] = useState<AbortController | null>(null);
 
   // Use useCallback to memoize the function
-  const generateSuggestion = useCallback(async () => {
+  const generateSuggestion = useCallback(async (forceFresh = false) => {
     // Cancel previous request if it exists
     if (abortController) {
       abortController.abort();
@@ -55,6 +55,11 @@ const TopicSuggestion: React.FC<TopicSuggestionProps> = ({ platformStats }) => {
       }
 
       prompt += "For each topic, provide a brief explanation of why it's important and one specific problem they could start with.";
+
+      // Add timestamp to force fresh suggestions when requested
+      if (forceFresh) {
+        prompt += ` (Fresh suggestions requested at ${Date.now()})`;
+      }
 
       console.log("Sending prompt to suggest-topics function:", prompt);
       
@@ -96,6 +101,12 @@ const TopicSuggestion: React.FC<TopicSuggestionProps> = ({ platformStats }) => {
     }
   }, [platformStats]);
 
+  const clearSuggestion = () => {
+    setSuggestion(null);
+    setError(null);
+    toast.success("Suggestions cleared");
+  };
+
   return (
     <Card className="glass-card">
       <CardHeader>
@@ -131,9 +142,9 @@ const TopicSuggestion: React.FC<TopicSuggestionProps> = ({ platformStats }) => {
       </CardContent>
       <CardFooter className="flex gap-2">
         <Button 
-          onClick={generateSuggestion} 
+          onClick={() => generateSuggestion(false)} 
           disabled={isLoading} 
-          className="w-full bg-purple-600 hover:bg-purple-700"
+          className="flex-1 bg-purple-600 hover:bg-purple-700"
         >
           {isLoading ? (
             <>
@@ -143,12 +154,33 @@ const TopicSuggestion: React.FC<TopicSuggestionProps> = ({ platformStats }) => {
           ) : suggestion ? (
             <>
               <RefreshCw className="mr-2 h-4 w-4" />
-              Generate New Suggestions
+              Get New Suggestions
             </>
           ) : (
             "Generate Suggestions"
           )}
         </Button>
+        {suggestion && (
+          <>
+            <Button 
+              onClick={() => generateSuggestion(true)} 
+              disabled={isLoading} 
+              variant="outline"
+              className="border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Force Fresh
+            </Button>
+            <Button 
+              onClick={clearSuggestion} 
+              disabled={isLoading} 
+              variant="outline"
+              className="border-red-600 text-red-600 hover:bg-red-600 hover:text-white"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </>
+        )}
       </CardFooter>
     </Card>
   );
