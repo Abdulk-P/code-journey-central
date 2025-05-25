@@ -23,7 +23,7 @@ const SignInForm: React.FC = () => {
 
     try {
       await login(email, password);
-      toast.success("Successfully signed in!");
+      // Navigation will be handled by auth state change
       navigate("/dashboard");
     } catch (error) {
       console.error("Login error:", error);
@@ -35,6 +35,8 @@ const SignInForm: React.FC = () => {
         setErrorMessage("Invalid email or password. Please try again.");
       } else if (errorMsg.includes("Email not confirmed")) {
         setErrorMessage("Please verify your email before signing in.");
+      } else if (errorMsg.includes("Too many requests")) {
+        setErrorMessage("Too many login attempts. Please try again later.");
       } else {
         setErrorMessage(errorMsg);
       }
@@ -72,6 +74,7 @@ const SignInForm: React.FC = () => {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="bg-background/50"
+              autoComplete="email"
             />
           </div>
           <div className="space-y-2">
@@ -86,6 +89,7 @@ const SignInForm: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
               className="bg-background/50"
+              autoComplete="current-password"
             />
             <div className="text-sm text-right">
               <Link to="/forgot-password" className="text-purple-400 hover:underline">

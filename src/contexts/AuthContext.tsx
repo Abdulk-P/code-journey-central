@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,13 +56,36 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Auth state cleanup utility
+const cleanupAuthState = () => {
+  try {
+    // Remove all Supabase auth keys from localStorage
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Remove from sessionStorage if in use
+    if (typeof sessionStorage !== 'undefined') {
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    }
+  } catch (error) {
+    console.error("Error cleaning up auth state:", error);
+  }
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const navigate = useNavigate();
 
-  // Initialize default stats (temporary until we integrate with actual platform APIs)
+  // Initialize default stats
   const defaultStats = {
     totalQuestions: 0,
     activeDays: 0,
@@ -153,7 +177,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           website: socialsData.website || '',
           resume: socialsData.resume || ''
         } : {},
-        stats: defaultStats  // Using default stats until platform API integration
+        stats: defaultStats
       };
 
       setUser(userData);
@@ -176,8 +200,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Set up auth state listener
         const { data: { subscription } } = await supabase.auth.onAuthStateChange(
           async (event, session) => {
+            console.log("Auth state changed:", event, session?.user?.id);
+            
             if (session && session.user) {
-              await fetchUserData();
+              // Defer data fetching to prevent deadlocks
+              setTimeout(() => {
+                fetchUserData();
+              }, 100);
             } else {
               setUser(null);
               setIsAuthenticated(false);
@@ -186,8 +215,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         );
 
-        // Initial fetch
-        await fetchUserData();
+        // Initial session check
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session && session.user) {
+          await fetchUserData();
+        } else {
+          setIsLoading(false);
+        }
 
         return () => {
           subscription.unsubscribe();
@@ -205,6 +239,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
+      // Clean up any existing auth state
+      cleanupAuthState();
+      
+      // Attempt to sign out any existing session
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (err) {
+        // Continue even if this fails
+        console.log("Sign out during login failed (expected):", err);
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -214,11 +259,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
-      await fetchUserData();
-      navigate("/dashboard");
+      // The onAuthStateChange will handle fetching user data
+      toast.success("Successfully signed in!");
     } catch (error: any) {
       console.error("Login error:", error);
-      toast.error(error.message || "Failed to sign in");
       setIsLoading(false);
       throw error;
     }
@@ -228,6 +272,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signup = async (email: string, password: string, firstName: string, lastName: string) => {
     setIsLoading(true);
     try {
+      // Clean up any existing auth state
+      cleanupAuthState();
+      
       // Register the user
       const { error, data } = await supabase.auth.signUp({
         email,
@@ -260,11 +307,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      await fetchUserData();
-      navigate("/dashboard");
+      toast.success("Account created successfully!");
     } catch (error: any) {
       console.error("Signup error:", error);
-      toast.error(error.message || "Failed to create account");
       setIsLoading(false);
       throw error;
     }
@@ -273,17 +318,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Logout function
   const logout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
+      setIsLoading(true);
+      
+      // Clean up auth state first
+      cleanupAuthState();
+      
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      
       if (error) {
         console.error("Logout error:", error);
-        toast.error("Failed to sign out");
-        throw error;
-      } else {
-        setUser(null);
-        setIsAuthenticated(false);
       }
+      
+      // Reset state
+      setUser(null);
+      setIsAuthenticated(false);
+      setIsLoading(false);
+      
+      // Force page reload for clean state
+      window.location.href = '/';
     } catch (error) {
       console.error("Logout error:", error);
+      setIsLoading(false);
       throw error;
     }
   };

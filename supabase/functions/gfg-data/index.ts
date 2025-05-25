@@ -25,58 +25,86 @@ serve(async (req) => {
     
     console.log(`Fetching GeeksforGeeks data for user: ${username}`);
     
-    // GeeksforGeeks API endpoint
-    const gfgApiUrl = `https://geeks-for-geeks-api.vercel.app/${username}`;
+    // Try multiple API endpoints for better reliability
+    const gfgApiUrls = [
+      `https://geeks-for-geeks-api.vercel.app/${username}`,
+      `https://gfgapi.vercel.app/${username}`,
+      `https://geeksforgeeks-api.cyclic.app/${username}`
+    ];
     
-    // Make the request to GeeksforGeeks API with a timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+    let lastError = null;
     
-    try {
-      const response = await fetch(gfgApiUrl, {
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        console.error("GFG API Error:", response.status, response.statusText);
-        throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      
-      // If user not found or API returns an error
-      if (data.error) {
+    for (const apiUrl of gfgApiUrls) {
+      try {
+        console.log(`Trying API: ${apiUrl}`);
+        
+        // Make the request with a shorter timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000); // 6 second timeout
+        
+        const response = await fetch(apiUrl, {
+          signal: controller.signal,
+          headers: {
+            'User-Agent': 'ProgressBuddy/1.0',
+            'Accept': 'application/json'
+          }
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          console.error(`GFG API Error (${apiUrl}):`, response.status, response.statusText);
+          lastError = new Error(`API returned ${response.status}: ${response.statusText}`);
+          continue; // Try next API
+        }
+        
+        const data = await response.json();
+        
+        // Check if the response indicates user not found
+        if (data.error || data.message === "User not found" || !data.info) {
+          console.log(`User not found in API: ${apiUrl}`);
+          lastError = new Error("User not found on GeeksforGeeks");
+          continue; // Try next API
+        }
+        
+        // Success - return the data
+        console.log(`Successfully fetched data from: ${apiUrl}`);
         return new Response(
-          JSON.stringify({ error: data.error || "User not found on GeeksforGeeks" }),
-          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ 
+            success: true, 
+            data: data,
+            source: apiUrl
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+        
+      } catch (error) {
+        console.error(`Error with API ${apiUrl}:`, error);
+        if (error.name === 'AbortError') {
+          lastError = new Error("Request timed out");
+        } else {
+          lastError = error;
+        }
+        continue; // Try next API
       }
-      
-      // Return the user data
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          data: data 
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        console.error("GFG API request timed out for user:", username);
-        return new Response(
-          JSON.stringify({ error: "Request timed out. The GeeksforGeeks API is taking too long to respond." }),
-          { status: 408, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      throw error;
     }
+    
+    // If we get here, all APIs failed
+    console.error("All GFG APIs failed, last error:", lastError);
+    return new Response(
+      JSON.stringify({ 
+        error: lastError?.message || "User not found on GeeksforGeeks. Please check the username and try again." 
+      }),
+      { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+    
   } catch (error) {
-    console.error("Error fetching GeeksforGeeks data:", error);
+    console.error("Error in GFG data function:", error);
     
     return new Response(
-      JSON.stringify({ error: "Failed to fetch data from GeeksforGeeks" }),
+      JSON.stringify({ 
+        error: "Failed to fetch data from GeeksforGeeks. Please try again later." 
+      }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
